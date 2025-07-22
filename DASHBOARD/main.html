@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>District DOS Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    @media screen and (max-width: 768px) {
+      .top-bar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .top-bar input[type="text"],
+      .top-bar select,
+      .top-bar button,
+      .top-bar input[type="file"] {
+        width: 100%;
+      }
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+    }
+    .top-bar input[type="text"],
+    .top-bar select,
+    .top-bar button,
+    .top-bar input[type="file"] {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .chart-toggle {
+      display: flex;
+      justify-content: flex-end;
+      margin: 10px;
+    }
+    .chart-toggle button {
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 5px;
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+.card:hover, .population-card:hover, .Population-5:hover, .population-21plus:hover, .population-51plus:hover, .birthday:hover, .all-district:hover {
+  box-shadow: 0 8px 32px rgba(44, 62, 80, 0.16);
+}
+.card h4, .population-card h4, .Population-5 h4, .population-21plus h4, .population-51plus h4, .birthday h4 {
+  margin-bottom: 12px;
+  color: #2c3e50;
+}
+.bar-chart-container, .pie-chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+  </style>
+</head>
+<body onload="renderDistrictChart()">
+  <div class="container">
+    <div class="sidebar">
+      <img src="paranaque.png" alt="logo" />
+      <h1 style="font-size: 24px; color: #ffffff; transform: translate(40px, 5px);">DISTRICT</h1>
+      <p style="font-size: 14px; color: #ffffff; transform: translate(100px, -10px);">DOS</p>
+      <div class="menu">
+        <h3>Menu</h3>
+        <ul>
+          <li onclick="navigateTo('dashboard')">
+            <img src="dashboard.png" alt="Dashboard" style="width:24px; height:24px;">
+            <span style="font-size: 16px; color: #ffffff; transform: translate(100px, -65px);">Dashboard</span>
+          </li>
+          <li onclick="navigateTo('profile')">
+            <img src="profile.png" alt="Profile" style="width:24px; height:24px; vertical-align:middle; margin-right:81px;">
+            <span style="font-size: 16px; color: #ffffff; transform: translate(100px, -5px);">Profile</span>
+          </li>
+          <li onclick="navigateTo('calendar')">
+            <img src="calendar.png" alt="Calendar" style="width:24px; height:24px; vertical-align:middle; margin-right:81px;">
+            <span style="font-size: 16px; color: #ffffff; transform: translate(100px, -5px);">Calendar</span>
+          </li>
+          <li onclick="navigateTo('setting')">
+            <img src="setting.png" alt="Setting" style="width:24px; height:24px; vertical-align:middle; margin-right:81px;">
+            <span style="font-size: 16px; color: #ffffff; transform: translate(100px, -5px);">Setting</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div id="dashboard" class="section active">
+        <div class="top-bar">
+          <div>
+            <h2 style="font-size: 20px; color: #ffffff; transform: translate(30px, -5px);">Dashboard</h2>
+            <p style="font-size: 14px; color: #ffffff; transform: translate(30px, -5px);">Sustainable growth starts with balance.</p>
+          </div>
+          <div class="import-controls">
+            <input type="text" placeholder="Search" />
+            <select id="barangaySelect">
+              <option value="">All</option>
+              <option value="Merville">Merville</option>
+              <option value="BF Homes">BF Homes</option>
+              <option value="Don Bosco">Don Bosco</option>
+              <option value="Marcelo Green">Marcelo Green</option>
+              <option value="Moonwalk">Moonwalk</option>
+              <option value="San Antonio">San Antonio</option>
+              <option value="San Martin de Porres">San Martin de Porres</option>
+              <option value="Sun Valley">Sun Valley</option>
+            </select>
+            <button onclick="showAlert('Add Information clicked')">+ Add Information</button>
+            <label for="importInput" style="background-color: #000000; color: white; padding: 10px; border-radius: 6px; cursor: pointer;">Import CSV</label>
+            <input type="file" id="importInput" accept=".csv" style="display: none;" onchange="handleImportCSV(event)" />
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="population-card">
+            <h4 style="font-size: 50px; color: #ffffff; transform: translate(30px, 30px);">Population</h4>
+            <p1 style="font-size: 90px; color: #ffffff; transform: translate(30px, 20px);">0</p1>
+            <p style="font-size: 20px; color: #ffffff; transform: translate(30px, 10px);">Resident</p>
+          </div>
+
+          <div class="Population-5">
+            <h4 class="age-label">Population aged 1-20</h4>
+            <div class="percent-display">
+              <p class="p1" id="percentValue">0</p>
+              <p class="p2">%</p>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="population-21plus">
+            <h4 class="age-label">Population aged 21-50</h4>
+            <div class="percent-display">
+              <p class="p1" id="percentValue2">0</p>
+              <p class="p2">%</p>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progressFill2"></div>
+              <p style="font-size: 24px; color: #B9770E;">15%</p>
+            </div>
+          </div>
+
+          <div class="population-51plus">
+            <h4 class="age-label">Population aged 51-70+</h4>
+            <div class="percent-display">
+              <p class="p1" id="percentValue3">0</p>
+              <p class="p2">%</p>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progressFill3"></div>
+            </div>
+          </div>
+
+          <div class="analytics" id="chartContainer">
+            <div class="chart-toggle">
+                <button onclick="toggleDistrictChart()">Toggle Bar/Line Chart</button>
+          </div>
+          <h4 style="font-size: 24px; color: #ffffff; transform: translate(-350px, 10px);">Analytics</h4>
+            <div class="bar-chart-container">
+              <canvas id="barChart" class="bar-chart-canvas"></canvas>
+            </div>
+              <button id="showMoreChart" onclick="toggleChartHeight()">Show More</button>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size: 50px; color: #ffffff; transform: translate(-100px, 10px);">Sex</h4>
+            <canvas id="pieChart" height="250"></canvas>
+          </div>
+
+          <div class="birthday">
+            <h4>Incoming Birthday</h4>
+            <p>No data yet</p>
+          </div>
+
+          <div class="people">
+            <div class="people-count">Total Residents: <span id="peopleLength">0</span></div>
+            <div class="people-table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Address</th>
+                    <th>Age</th>
+                    <th>Sex</th>
+                    <th>Contact</th>
+                    <th>Birthday</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- table rows here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+     
+
+      <div id="profile" class="section"><h2>Profile Section</h2><p>Profile details go here.</p></div>
+      <div id="calendar" class="section"><h2>Calendar Section</h2><p>Calendar events go here.</p></div>
+      <div id="setting" class="section"><h2>Setting Section</h2><p>Setting options go here.</p></div>
+    </div>
+  </div>
+  <div id="districtSummary"></div>
+  <span class="total-population"></span>
+
+  
+  <!-- Add Information Modal -->
+<div id="addInfoModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeAddInfoModal()">&times;</span>
+    <h3>Add Information</h3>
+    <form id="addInfoForm">
+      <label>Name:</label>
+      <input type="text" name="name" required />
+      <label>Address:</label>
+      <input type="text" name="address" required />
+      <label>Contact:</label>
+      <input type="text" name="contact" required />
+      <label>Age:</label>
+      <input type="number" name="age" required min="0" />
+      <label>Sex:</label>
+      <select name="sex" required>
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      <label>Birthday:</label>
+      <input type="date" name="birthday" required />
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+
+<!-- Example HTML for barangay buttons -->
+<button onclick="loadBarangayData('Merville')">Merville</button>
+<button onclick="loadBarangayData('BF Homes')">BF Homes</button>
+<!-- Repeat for other barangays -->
+
+</body>
+</html>
